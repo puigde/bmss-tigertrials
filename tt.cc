@@ -31,7 +31,7 @@ vector<int> get_bmss_elements(int n, int b, const vector<int> wset)
     int i = n;
     int j = b;
     vector<int> values;
-    while (i >= 0 and j > 0)
+    while (i > 0 and j >= 0)
     {
         if (mem[i][j] != mem[i - 1][j]) //i-th element is in the mss (i-1 in wset indexing)
         {
@@ -44,10 +44,11 @@ vector<int> get_bmss_elements(int n, int b, const vector<int> wset)
 }
 
 // Scales and returns decimal weights in v stored with certain precision into ingteger values
-vector<int> scale_weights(const vector<double> &v, double precision)
+vector<int> scale_weights(const vector<double> &v, double precision, int &b)
 {
     vector<int> scaledweights(v.size());
     int multfactor = int(1 / precision);
+    b *= multfactor;
     for (int i = 0; i <= v.size() - 1; i++)
     {
         scaledweights[i] = v[i] * multfactor;
@@ -69,6 +70,7 @@ void erase_values(vector<int> &wset, const vector<int> &values)
                 wset.erase(wset.begin() + i);
                 found = true;
             }
+            i++;
         }
     }
 }
@@ -78,15 +80,24 @@ void erase_values(vector<int> &wset, const vector<int> &values)
 // elemets in v are assigned once to a subsets and a possible distribution
 void material_optimization(vector<double> &v, int b, double precision)
 {
-    vector<int> wset = scale_weights(v, precision);
-    mem = M(wset.size(), vector<int>(b + 1, 0));
+    double sum = 0;
+    for (double x : v)
+    {
+        sum += x;
+    }
+    cout << "Sum of values = " << sum << endl;
+    vector<int> wset = scale_weights(v, precision, b);
     M total_unscaled_values;
+    int counter = 0;
     while (wset.size() > 0)
     {
+        mem = M(wset.size() + 1, vector<int>(b + 1, 0));
         bounded_maximum_sum_wset(wset.size(), b, wset);
+        cout << wset.size() << " elements left in the weightset, Subset counter = " << counter << ", Subsetvalue = " << mem[wset.size()][b] << endl;
         vector<int> values = get_bmss_elements(wset.size(), b, wset);
         total_unscaled_values.push_back(values);
         erase_values(wset, values);
+        counter++;
     }
     cout << "Subsets needed = " << total_unscaled_values.size() << endl;
     //giving the output info
@@ -97,7 +108,6 @@ int main()
     int b;            //bound size
     double precision; //decimal precision for the weights
     cin >> n >> b >> precision;
-    mem = M(n + 1, vector<int>(b + 1, 0)); //has padding for i,j=0;
 
     //define and read the wset of n elements
     vector<double> wset(n);
