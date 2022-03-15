@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <fstream>
 using namespace std;
 using M = vector<vector<int>>;
 M mem;
@@ -128,6 +129,39 @@ int checker(const vector<int> &wset, const M &total_unscaled_values, double prec
     return 0;
 }
 
+void write_results(const M &total_unscaled_values, double precision, int b, const vector<double> &v)
+{
+    ofstream outputfile("output.txt");
+    outputfile << "Per als " << v.size() << " pals especificats, corresponents a les mides: ";
+    for (int i = 0; i < v.size(); i++)
+    {
+        outputfile << " [" << v[i] << "] ";
+    }
+    outputfile << endl;
+    outputfile << endl;
+    outputfile << "En total seran necessàries " << total_unscaled_values.size() << " barres grans" << endl;
+    outputfile << endl;
+    double sobrant = 0;
+
+    for (int i = 0; i < total_unscaled_values.size(); i++)
+    {
+        double scaled_sumrow = 0;
+        double epsilon = 1e-9;
+        outputfile << "La barra gran número " << i + 1 << " de mida " << b * precision << " metres es tallarà en els pals de mides: ";
+        for (int j = 0; j < total_unscaled_values[i].size(); j++)
+        {
+            outputfile << " [" << total_unscaled_values[i][j] * precision << "] ";
+            scaled_sumrow += total_unscaled_values[i][j] * precision;
+        }
+        outputfile << " (en metres) " << endl;
+        outputfile << "D'aquesta barra en sobraran " << (((b * precision - scaled_sumrow) > epsilon) ? (b * precision - scaled_sumrow) : (0)) << " metres" << endl;
+        sobrant = sobrant + b * precision - scaled_sumrow;
+        outputfile << endl;
+    }
+    outputfile << "En total, hem aconseguit disposar els " << b * precision * total_unscaled_values.size() - sobrant << " metres de pals necessaris utilitzant " << b * precision * total_unscaled_values.size() << " metres en les barres" << endl;
+    outputfile.close();
+}
+
 // Gets a set of decimal weights v, a bound b and the weight's precision
 // and obtains the minimum number of subsets with sum <= b needed so all the
 // elemets in v are assigned once to a subsets and a possible distribution
@@ -158,7 +192,10 @@ void material_optimization(vector<double> &v, int b, double precision)
     int errorcontrol = checker(ini_wset, total_unscaled_values, precision, b);
     cout << "Process checked with error = " << errorcontrol << endl;
 
-    // giving the output info
+    if (errorcontrol == 0)
+    {
+        write_results(total_unscaled_values, precision, b, v);
+    }
 }
 
 int main()
