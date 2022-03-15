@@ -33,7 +33,7 @@ vector<int> get_bmss_elements(int n, int b, const vector<int> wset)
     vector<int> values;
     while (i > 0 and j >= 0)
     {
-        if (mem[i][j] != mem[i - 1][j]) //i-th element is in the mss (i-1 in wset indexing)
+        if (mem[i][j] != mem[i - 1][j]) // i-th element is in the mss (i-1 in wset indexing)
         {
             values.push_back(wset[i - 1]);
             j -= wset[i - 1];
@@ -75,6 +75,59 @@ void erase_values(vector<int> &wset, const vector<int> &values)
     }
 }
 
+// checks validity of a solution, for testing and debugging purposes
+// return values: 0 = all good, 1 = cond 1 not; 2 = cond 1 valid, cond 2 not; 3 = only cond 3 not
+// we check all multiplying by precision, as in the way our final output will come
+int checker(const vector<int> &wset, const M &total_unscaled_values, double precision, int b)
+{
+    // c1: check that all elements in the wset are represented
+    // construct the checker matrix
+    vector<vector<bool>> checker_mat;
+    for (int i = 0; i < total_unscaled_values.size(); i++)
+    {
+        vector<bool> insert(total_unscaled_values[i].size(), false);
+        checker_mat.push_back(insert);
+    }
+    // iterate
+    for (int i = 0; i < wset.size(); i++)
+    {
+        bool found = false;
+        for (int j = 0; found == false && j < total_unscaled_values.size(); j++)
+        {
+            for (int k = 0; found == false && k < total_unscaled_values[j].size(); k++)
+            {
+                if (not checker_mat[j][k] and wset[i] * precision == total_unscaled_values[j][k] * precision)
+                {
+                    found = true;
+                    checker_mat[j][k] = true;
+                }
+            }
+        }
+        if (not found)
+            return 1;
+    }
+
+    double b_adjust = b * precision;
+    double epsilon = 0.000001;
+    // c3: check that none of the subsets proposed as a solution is greater than b
+    for (int i = 0; i < total_unscaled_values.size(); i++)
+    {
+        double sumrow = 0;
+        for (int j = 0; j < total_unscaled_values[i].size(); j++)
+        {
+            if (checker_mat[i][j] == false)
+                return 2;
+            sumrow = sumrow + total_unscaled_values[i][j] * precision;
+            if (sumrow > b_adjust + epsilon)
+            {
+                return 3;
+            }
+        }
+    }
+
+    return 0;
+}
+
 // Gets a set of decimal weights v, a bound b and the weight's precision
 // and obtains the minimum number of subsets with sum <= b needed so all the
 // elemets in v are assigned once to a subsets and a possible distribution
@@ -87,6 +140,7 @@ void material_optimization(vector<double> &v, int b, double precision)
     }
     cout << "Sum of values = " << sum << endl;
     vector<int> wset = scale_weights(v, precision, b);
+    vector<int> ini_wset = wset;
     M total_unscaled_values;
     int counter = 0;
     while (wset.size() > 0)
@@ -100,16 +154,21 @@ void material_optimization(vector<double> &v, int b, double precision)
         counter++;
     }
     cout << "Subsets needed = " << total_unscaled_values.size() << endl;
-    //giving the output info
+
+    int errorcontrol = checker(ini_wset, total_unscaled_values, precision, b);
+    cout << "Process checked with error = " << errorcontrol << endl;
+
+    // giving the output info
 }
+
 int main()
 {
-    int n;            //wset size
-    int b;            //bound size
-    double precision; //decimal precision for the weights
+    int n;            // wset size
+    int b;            // bound size
+    double precision; // decimal precision for the weights
     cin >> n >> b >> precision;
 
-    //define and read the wset of n elements
+    // define and read the wset of n elements
     vector<double> wset(n);
     for (double &x : wset)
         cin >> x;
