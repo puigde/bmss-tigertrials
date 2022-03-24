@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 using namespace std;
 using M = vector<vector<int>>;
 M mem;
@@ -209,5 +210,6 @@ int main()
     vector<double> wset(n);
     for (double &x : wset)
         cin >> x;
+    sort(wset.begin(), wset.end(), greater<double>()); // sorting for getting closer to optimality
     material_optimization(wset, b, precision);
 }
